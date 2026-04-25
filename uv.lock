@@ -3,6 +3,18 @@ revision = 3
 requires-python = ">=3.14"
 
 [[package]]
+name = "add-license-header"
+version = "2.4.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "identify" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/10/14/30d5503a0ef4091b14b549c3a3843641dad6150f74d75e02dab67da53765/add_license_header-2.4.1.tar.gz", hash = "sha256:7fe44b43b6bd4fdfe107720ed3b69961b3d059bf271133b48d68bfaec5265b2c", size = 6547, upload-time = "2026-01-25T20:02:48.686Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3d/1b/7b591ca2d5f5c02715c0f201b1122593b6a42897ff5ee40b4bd73e8bd3cd/add_license_header-2.4.1-py3-none-any.whl", hash = "sha256:c1fdb49ca2bddf0bcd7a428f71fad30e682560d4b009ea8ba40e14bd7a83de73", size = 7617, upload-time = "2026-01-25T20:02:47.122Z" },
+]
+
+[[package]]
 name = "click"
 version = "8.3.3"
 source = { registry = "https://pypi.org/simple" }
@@ -24,6 +36,15 @@ wheels = [
 ]
 
 [[package]]
+name = "identify"
+version = "2.6.19"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/52/63/51723b5f116cc04b061cb6f5a561790abf249d25931d515cd375e063e0f4/identify-2.6.19.tar.gz", hash = "sha256:6be5020c38fcb07da56c53733538a3081ea5aa70d36a156f83044bfbf9173842", size = 99567, upload-time = "2026-04-17T18:39:50.265Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/94/84/d9273cd09688070a6523c4aee4663a8538721b2b755c4962aafae0011e72/identify-2.6.19-py2.py3-none-any.whl", hash = "sha256:20e6a87f786f768c092a721ad107fc9df0eb89347be9396cadf3f4abbd1fb78a", size = 99397, upload-time = "2026-04-17T18:39:49.221Z" },
+]
+
+[[package]]
 name = "kuvo"
 version = "0.1.0"
 source = { editable = "." }
@@ -33,6 +54,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "add-license-header" },
     { name = "mkinit" },
     { name = "ruff" },
     { name = "ty" },
@@ -43,6 +65,7 @@ requires-dist = [{ name = "click", specifier = ">=8.3.3" }]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "add-license-header", specifier = ">=2.4.1" },
     { name = "mkinit", specifier = ">=1.2.0" },
     { name = "ruff", specifier = ">=0.15.12" },
     { name = "ty", specifier = ">=0.0.32" },

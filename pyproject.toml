@@ -13,6 +13,7 @@ kuvo = "kuvo.cli:main"
 
 [dependency-groups]
 dev = [
+    "add-license-header>=2.4.1",
     "mkinit>=1.2.0",
     "ruff>=0.15.12",
     "ty>=0.0.32",
@@ -26,3 +27,89 @@ build-backend = "uv_build"
 base = "gcr.io/distroless/cc-debian13:nonroot"
 cmd = ["kuvo"]
 
+[tool.ruff]
+line-length = 80
+indent-width = 4
+target-version = "py314"
+
+[tool.ruff.lint]
+preview = true
+select = [
+    # Security rules
+    "S",
+
+    # Eliminate commented-out code
+    "ERA",
+
+    # Enforce type annotations
+    "ANN001",
+    "ANN002",
+    "ANN003",
+    "ANN201",
+    "ANN204",
+    "ANN205",
+    "ANN206",
+
+    # Blind except
+    "BLE",
+
+    # Likely bugs
+    "B",
+
+    # Shadowing builtins
+    "A",
+
+    # Copyright headers
+    "CPY001",
+
+    # Exclusively use tz-aware datetimes because aware and naive datetimes
+    # raise exceptions when compared, making it dangerous to mix them.
+    "DTZ",
+
+    # Ban implicit namespace packages
+    "INP",
+
+    # Consistently use double quotes.
+    "Q",
+
+    # Conde simplification
+    "C4",
+    "RET",
+    "SIM",
+
+    # Import formats
+    "TID",
+
+    # Type-checking
+    "TC",
+
+    # Use pathlib instead of raw paths.
+    "PTH",
+
+    # Sort imports
+    "I",
+
+    # Naming conventions
+    "N",
+
+    # Performance bugs
+    "PERF",
+
+    # Documentation
+    "D",
+
+    # Use the latest language features
+    "UP",
+
+    # Ruff-specific rules
+    "RUF"
+]
+
+[tool.ruff.lint.isort]
+force-single-line = true
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
