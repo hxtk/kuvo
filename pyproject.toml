@@ -5,3 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = []
+
+[tool.kovu]
+base = "gcr.io/distroless/cc-debian13:nonroot"
+cmd = ["kuvo"]
