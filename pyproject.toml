@@ -4,8 +4,25 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "click>=8.3.3",
+]
+
+[project.scripts]
+kuvo = "kuvo.cli:main"
+
+[dependency-groups]
+dev = [
+    "mkinit>=1.2.0",
+    "ruff>=0.15.12",
+    "ty>=0.0.32",
+]
+
+[build-system]
+requires = ["uv_build>=0.11.7,<0.12"]
+build-backend = "uv_build"
 
 [tool.kovu]
 base = "gcr.io/distroless/cc-debian13:nonroot"
 cmd = ["kuvo"]
+
