@@ -102,7 +102,10 @@ select = [
     "UP",
 
     # Ruff-specific rules
-    "RUF"
+    "RUF",
+]
+ignore = [
+    "D104",
 ]
 
 [tool.ruff.lint.isort]

@@ -16,9 +16,20 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
+"""The main command line program for this application."""
+import click
 
+
+@click.group()
 def main() -> None:
-    print("Hello, world!")
+    """Reproducible OCI images for your Python projects."""
+    click.echo("Hello, world!")
+
+@main.command()
+def build() -> None:
+    """Build an OCI image for the current project."""
+    click.echo("Running the build...")
+
 
 if __name__ == "__main__":
     main()
