@@ -20,5 +20,7 @@ __protected__ = ["cli", "settings"]
 
 from kuvo import cli
 from kuvo import settings
+from kuvo import venv
+from kuvo.venv import build
 
-__all__ = ["cli", "settings"]
+__all__ = ["build", "cli", "settings", "venv"]

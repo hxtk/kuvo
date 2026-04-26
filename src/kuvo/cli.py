@@ -20,13 +20,13 @@
 
 import hashlib
 import pathlib
-import subprocess  # noqa: S404
 import tarfile
 import tempfile
 
 import click
 
 from kuvo import settings
+from kuvo import venv
 
 
 @click.group()
@@ -47,7 +47,7 @@ def build(ctx: click.Context) -> None:
     with tempfile.TemporaryDirectory() as tdstr:
         click.echo(f"Using temporary directory {tdstr}")
         td = pathlib.Path(tdstr)
-        _install_package(td)
+        venv.build(td)
 
         with tempfile.NamedTemporaryFile(
             suffix=".tar", mode="wb", delete_on_close=False
@@ -78,43 +78,6 @@ def build(ctx: click.Context) -> None:
             target = out_path / f"blobs/sha256/{digest}"
             target.parent.mkdir(parents=True, exist_ok=True)
             path.copy(target)
-
-
-def _install_package(rootfs: pathlib.Path) -> None:
-    python = rootfs / "usr/local/python"
-    app = rootfs / "app"
-    env = {
-        "UV_FROZEN": "1",
-        "UV_NO_CACHE": "1",
-        "UV_NO_DEV": "1",
-        "UV_PYTHON_INSTALL_DIR": str(python),
-        "UV_PROJECT_ENVIRONMENT": str(app),
-        "UV_VENV_RELOCATABLE": "1",
-    }
-    subprocess.run(["uv", "sync"], env=env)  # noqa: S607
-    bin_dir = app / "bin"
-    _fix_shebangs(bin_dir, rootfs)
-    app_py = bin_dir / "python"
-    target = app_py.resolve().relative_to(app_py.parent, walk_up=True)
-    app_py.unlink()
-    app_py.symlink_to(target)
-
-
-def _fix_shebangs(bin_dir: pathlib.Path, rootfs: pathlib.Path) -> None:
-    for script in bin_dir.iterdir():
-        if not script.is_file(follow_symlinks=False):
-            continue
-
-        text = script.read_text()
-
-        if not text.startswith("#!"):
-            continue
-
-        lines = text.splitlines()
-        shebang = pathlib.Path(lines[0][2:])
-        if shebang.is_relative_to(rootfs):
-            lines[0] = f"#!/{shebang.relative_to(rootfs)}"
-            script.write_text("\n".join(lines) + "\n")
 
 
 def _package_tar(
