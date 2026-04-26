@@ -16,27 +16,25 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
-__protected__ = ["cli", "settings"]
 
-from kuvo import cli
-from kuvo import oci
-from kuvo import settings
-from kuvo import venv
-from kuvo.oci import InvalidReferenceError
-from kuvo.oci import NoMatchingManifestError
+import json
+import pathlib
+import unittest
+
 from kuvo.oci import models
-from kuvo.oci import oci
-from kuvo.oci import pull
-from kuvo.venv import build
 
-__all__ = [
-    "InvalidReferenceError",
-    "NoMatchingManifestError",
-    "build",
-    "cli",
-    "models",
-    "oci",
-    "pull",
-    "settings",
-    "venv",
-]
+TEST_INDEX = pathlib.Path(__file__).parent / "test_index.json"
+INDEX_TEXT = TEST_INDEX.read_text()
+
+
+class TestImageIndex(unittest.TestCase):
+    """Test parsing and serialization of the ImageIndex model."""
+
+    maxDiff = 10_000
+
+    def test_roundtrip_pydantic(self) -> None:
+        """Test round-trip through pydantic's validate_json and dump_json."""
+        m = models.ImageIndex.model_validate_json(INDEX_TEXT)
+        want = json.loads(INDEX_TEXT)
+        got = json.loads(m.model_dump_json(exclude_none=True))
+        self.assertEqual(want, got)

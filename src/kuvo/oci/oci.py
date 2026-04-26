@@ -26,6 +26,8 @@ import pydantic
 from oras import client
 from oras import container
 
+from kuvo.oci import models
+
 if TYPE_CHECKING:
     import pathlib
 
@@ -47,82 +49,12 @@ class InvalidReferenceError(Exception):
 class NoMatchingManifestError(Exception):
     """Indicates an Image Index had no manifest matching a particular platform."""
 
-    def __init__(self, desc: _ImageIndex, os: str, arch: str) -> None:
+    def __init__(self, desc: models.ImageIndex, os: str, arch: str) -> None:
         """Indicates no suitable manifest for a requested platform."""
         self.descriptor = desc
         self.os = os
         self.arch = arch
         super().__init__(f"No manifest matched os={os}, arch={arch}.")
-
-
-class _Platform(pydantic.BaseModel):
-    architecture: str
-    os: str
-
-    os_version: str | None = pydantic.Field(
-        default=None,
-        alias="os.version",
-        serialization_alias="os.version",
-    )
-    os_features: list[str] | None = pydantic.Field(
-        default=None,
-        alias="os.features",
-        serialization_alias="os.features",
-    )
-    variant: str | None = None
-    features: list[str] | None = None
-
-
-class _Descriptor(pydantic.BaseModel):
-    media_type: str = pydantic.Field(
-        alias="mediaType",
-        serialization_alias="mediaType",
-    )
-    digest: str
-    size: int
-
-    urls: list[pydantic.HttpUrl] | None = None
-    annotations: dict[str, str] | None = None
-    platform: _Platform | None = None
-
-    model_config = {"extra": "allow"}
-
-
-class _ImageManifest(pydantic.BaseModel):
-    schema_version: Literal[2] = pydantic.Field(
-        default=2,
-        alias="schemaVersion",
-        serialization_alias="schemaVersion",
-    )
-    media_type: str = pydantic.Field(
-        default="application/vnd.oci.image.manifest.v1+json",
-        alias="mediaType",
-        serialization_alias="mediaType",
-    )
-
-    config: _Descriptor
-    layers: list[_Descriptor]
-
-    model_config = {"extra": "allow"}
-
-
-class _ImageIndex(pydantic.BaseModel):
-    schema_version: Literal[2] = pydantic.Field(
-        default=2,
-        alias="schemaVersion",
-        serialization_alias="schemaVersion",
-    )
-    media_type: str = pydantic.Field(
-        default="application/vnd.oci.image.index.v1+json",
-        alias="mediaType",
-        serialization_alias="mediaType",
-    )
-
-    manifests: list[_Descriptor]
-
-    annotations: dict[str, str] | None = None
-
-    model_config = {"extra": "allow"}
 
 
 def pull(
@@ -135,7 +67,7 @@ def pull(
     """Fetch an OCI layout directory of an image reference."""
     con = container.Container(ref)
     c = client.OrasClient(insecure=insecure)
-    idx = _ImageIndex.model_validate(
+    idx = models.ImageIndex.model_validate(
         c.get_manifest(con, allowed_media_type=[_INDEX_MEDIA_TYPE])
     )
 
@@ -154,7 +86,7 @@ def pull(
 
     mfcon = container.Container(ref)
     mfcon.digest = mfd.digest
-    mf = _ImageManifest.model_validate(
+    mf = models.ImageManifest.model_validate(
         c.get_manifest(mfcon),
     )
     mf_data = mf.model_dump_json().encode()
@@ -169,7 +101,7 @@ def pull(
 
     mfd.digest = f"sha256:{mf_digest}"
     (oci / "index.json").write_text(
-        _ImageIndex(
+        models.ImageIndex(
             media_type=_INDEX_MEDIA_TYPE,
             manifests=[mfd],
             annotations=idx.annotations,
@@ -181,7 +113,7 @@ def _fetch_descriptor(
     c: client.OrasClient,
     con: container.Container,
     outdir: pathlib.Path,
-    desc: _Descriptor,
+    desc: models.Descriptor,
 ) -> pathlib.Path:
     digest = desc.digest
     outfile = outdir / digest.replace("sha256:", "")

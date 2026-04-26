@@ -16,27 +16,19 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
-__protected__ = ["cli", "settings"]
 
-from kuvo import cli
-from kuvo import oci
-from kuvo import settings
-from kuvo import venv
-from kuvo.oci import InvalidReferenceError
-from kuvo.oci import NoMatchingManifestError
+__protected__ = ["models"]
+__private__ = ["*_test"]
 from kuvo.oci import models
 from kuvo.oci import oci
-from kuvo.oci import pull
-from kuvo.venv import build
+from kuvo.oci.oci import InvalidReferenceError
+from kuvo.oci.oci import NoMatchingManifestError
+from kuvo.oci.oci import pull
 
 __all__ = [
     "InvalidReferenceError",
     "NoMatchingManifestError",
-    "build",
-    "cli",
     "models",
     "oci",
     "pull",
-    "settings",
-    "venv",
 ]

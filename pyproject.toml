@@ -17,6 +17,7 @@ kuvo = "kuvo.cli:main"
 dev = [
     "add-license-header>=2.4.1",
     "mkinit>=1.2.0",
+    "pytest>=9.0.3",
     "ruff>=0.15.12",
     "ty>=0.0.32",
 ]
