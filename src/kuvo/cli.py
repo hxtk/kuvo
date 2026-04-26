@@ -17,6 +17,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 """The main command line program for this application."""
+
+import pathlib
+import subprocess  # noqa: S404
+import tempfile
+
 import click
 
 
@@ -25,10 +30,52 @@ def main() -> None:
     """Reproducible OCI images for your Python projects."""
     click.echo("Hello, world!")
 
+
 @main.command()
 def build() -> None:
     """Build an OCI image for the current project."""
     click.echo("Running the build...")
+    with tempfile.TemporaryDirectory() as tdstr:
+        click.echo(f"Using temporary directory {tdstr}")
+        td = pathlib.Path(tdstr)
+        _install_package(td)
+
+
+def _install_package(rootfs: pathlib.Path) -> None:
+    python = rootfs / "usr/local/python"
+    app = rootfs / "app"
+    env = {
+        "UV_FROZEN": "1",
+        "UV_NO_CACHE": "1",
+        "UV_NO_DEV": "1",
+        "UV_PYTHON_INSTALL_DIR": str(python),
+        "UV_PROJECT_ENVIRONMENT": str(app),
+        "UV_VENV_RELOCATABLE": "1",
+    }
+    subprocess.run(["uv", "sync"], env=env)  # noqa: S607
+    bin_dir = app / "bin"
+    _fix_shebangs(bin_dir, rootfs)
+    app_py = bin_dir / "python"
+    target = app_py.resolve().relative_to(app_py.parent, walk_up=True)
+    app_py.unlink()
+    app_py.symlink_to(target)
+
+
+def _fix_shebangs(bin_dir: pathlib.Path, rootfs: pathlib.Path) -> None:
+    for script in bin_dir.iterdir():
+        if not script.is_file(follow_symlinks=False):
+            continue
+
+        text = script.read_text()
+
+        if not text.startswith("#!"):
+            continue
+
+        lines = text.splitlines()
+        shebang = pathlib.Path(lines[0][2:])
+        if shebang.is_relative_to(rootfs):
+            lines[0] = f"#!/{shebang.relative_to(rootfs)}"
+            script.write_text("\n".join(lines) + "\n")
 
 
 if __name__ == "__main__":
