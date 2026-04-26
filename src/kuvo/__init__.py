@@ -19,8 +19,21 @@
 __protected__ = ["cli", "settings"]
 
 from kuvo import cli
+from kuvo import oci
 from kuvo import settings
 from kuvo import venv
+from kuvo.oci import InvalidReferenceError
+from kuvo.oci import NoMatchingManifestError
+from kuvo.oci import pull
 from kuvo.venv import build
 
-__all__ = ["build", "cli", "settings", "venv"]
+__all__ = [
+    "InvalidReferenceError",
+    "NoMatchingManifestError",
+    "build",
+    "cli",
+    "oci",
+    "pull",
+    "settings",
+    "venv",
+]

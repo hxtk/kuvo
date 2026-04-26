@@ -19,12 +19,15 @@
 """The main command line program for this application."""
 
 import hashlib
+import json
 import pathlib
 import tarfile
 import tempfile
 
 import click
+import oras.client
 
+from kuvo import oci
 from kuvo import settings
 from kuvo import venv
 
@@ -43,6 +46,7 @@ def build(ctx: click.Context) -> None:
     """Build an OCI image for the current project."""
     ctx.ensure_object(settings.Config)
     out_path = pathlib.Path(ctx.obj.oci_path)
+    oci.pull(out_path, ctx.obj.base)
     click.echo("Running the build...")
     with tempfile.TemporaryDirectory() as tdstr:
         click.echo(f"Using temporary directory {tdstr}")
