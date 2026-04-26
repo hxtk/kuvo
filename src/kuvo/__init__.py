@@ -16,4 +16,9 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
+__protected__ = ["cli", "settings"]
 
+from kuvo import cli
+from kuvo import settings
+
+__all__ = ["cli", "settings"]
