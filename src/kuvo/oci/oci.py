@@ -33,6 +33,7 @@ if TYPE_CHECKING:
 
 _INDEX_MEDIA_TYPE = "application/vnd.oci.image.index.v1+json"
 _IMAGE_MEDIA_TYPE = "application/vnd.oci.image.manifest.v1+json"
+_TAR_MEDIA_TYPE = "application/vnd.oci.image.layer.v1.tar"
 
 
 class InvalidReferenceError(Exception):
@@ -89,9 +90,10 @@ def pull(
     mf = models.ImageManifest.model_validate(
         c.get_manifest(mfcon),
     )
-    mf_data = mf.model_dump_json().encode()
+    mf_data = mf.model_dump_json(exclude_none=True).encode()
     mf_digest = hashlib.sha256(mf_data).hexdigest()
     (blobs / mf_digest).write_bytes(mf_data)
+    print(blobs / mf_digest)
 
     (oci / "oci-layout").write_text(json.dumps({"imageLayoutVersion": "1.0.0"}))
     blobs.mkdir(exist_ok=True, parents=True)
@@ -99,13 +101,16 @@ def pull(
         _fetch_descriptor(c, con, blobs, layer)
     _fetch_descriptor(c, con, blobs, mf.config)
 
+    print(mfd.digest)
     mfd.digest = f"sha256:{mf_digest}"
+    print(mfd.digest)
+    mfd.size = len(mf_data)
     (oci / "index.json").write_text(
         models.ImageIndex(
             media_type=_INDEX_MEDIA_TYPE,
             manifests=[mfd],
             annotations=idx.annotations,
-        ).model_dump_json()
+        ).model_dump_json(exclude_none=True)
     )
 
 
@@ -123,3 +128,76 @@ def _fetch_descriptor(
         outfile=outfile,
     )
     return outfile
+
+
+def add_layer(
+    oci: pathlib.Path,
+    tar: pathlib.Path,
+    arch: str | None = None,
+    os: str | None = None,
+) -> None:
+    """Add a layer to an image manifest, replacing the original manifest."""
+    size = tar.stat().st_size
+    with tar.open("rb") as f:
+        digest = hashlib.file_digest(f, hashlib.sha256).hexdigest()
+    tar.copy(oci / f"blobs/sha256/{digest}")
+
+    desc = models.Descriptor(
+        size=size, mediaType=_TAR_MEDIA_TYPE, digest=f"sha256:{digest}"
+    )
+    idxf = oci / "index.json"
+    idx = models.ImageIndex.model_validate_json(idxf.read_text())
+    for manifest in idx.manifests:
+        if (
+            arch
+            and manifest.platform
+            and manifest.platform.architecture != arch
+        ):
+            continue
+        if os and manifest.platform and manifest.platform.os != os:
+            continue
+
+        manifest.digest, manifest.size = _add_manifest_layer(
+            oci,
+            manifest,
+            desc,
+        )
+
+    idxf.write_text(idx.model_dump_json(exclude_none=True))
+
+
+def _add_manifest_layer(
+    oci: pathlib.Path,
+    manifest: models.Descriptor,
+    layer: models.Descriptor,
+) -> tuple[str, int]:
+    mfp = oci / f"blobs/{manifest.digest.replace(':', '/')}"
+    mf = models.ImageManifest.model_validate_json(mfp.read_text())
+    mf.layers.append(layer)
+
+    mf.config.digest, mf.config.size = _add_config_layer(oci, mf.config, layer)
+
+    data = mf.model_dump_json(exclude_none=True).encode()
+    digest = hashlib.sha256(data).hexdigest()
+    mfp.write_bytes(data)
+    mfp.rename(oci / f"blobs/sha256/{digest}")
+
+    return f"sha256:{digest}", len(data)
+
+
+def _add_config_layer(
+    oci: pathlib.Path,
+    config: models.Descriptor,
+    layer: models.Descriptor,
+) -> tuple[str, int]:
+    cfp = oci / f"blobs/{config.digest.replace(':', '/')}"
+    cf = models.ImageConfig.model_validate_json(cfp.read_text())
+    cf.rootfs.diff_ids.append(layer.digest)
+
+    data = cf.model_dump_json(exclude_none=True).encode()
+    digest = hashlib.sha256(data).hexdigest()
+
+    cfp.write_bytes(data)
+    cfp.rename(oci / f"blobs/sha256/{digest}")
+
+    return f"sha256:{digest}", len(data)

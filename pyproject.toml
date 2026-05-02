@@ -27,7 +27,7 @@ requires = ["uv_build>=0.11.7,<0.12"]
 build-backend = "uv_build"
 
 [tool.kovu]
-base = "gcr.io/distroless/cc-debian13:nonroot"
+base = "cgr.dev/chainguard/glibc-dynamic:latest"
 cmd = ["kuvo"]
 
 [tool.ruff]

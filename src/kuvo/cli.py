@@ -37,7 +37,6 @@ from kuvo import venv
 def main(ctx: click.Context) -> None:
     """Reproducible OCI images for your Python projects."""
     ctx.obj = settings.get_config()
-    click.echo("Hello, world!")
 
 
 @main.command()
@@ -62,11 +61,7 @@ def build(ctx: click.Context) -> None:
                 _package_tar(tf, rootfs=td, include=["usr"])
             tmp.close()
 
-            with path.open("rb") as hf:
-                digest = hashlib.file_digest(hf, hashlib.sha256).hexdigest()
-            target = out_path / f"blobs/sha256/{digest}"
-            target.parent.mkdir(parents=True, exist_ok=True)
-            path.copy(target)
+            oci.add_layer(out_path, path)
 
         with tempfile.NamedTemporaryFile(
             suffix=".tar", mode="wb", delete_on_close=False
@@ -77,11 +72,7 @@ def build(ctx: click.Context) -> None:
                 _package_tar(tf, rootfs=td, include=["app"])
             tmp.close()
 
-            with path.open("rb") as hf:
-                digest = hashlib.file_digest(hf, hashlib.sha256).hexdigest()
-            target = out_path / f"blobs/sha256/{digest}"
-            target.parent.mkdir(parents=True, exist_ok=True)
-            path.copy(target)
+            oci.add_layer(out_path, path)
 
 
 def _package_tar(

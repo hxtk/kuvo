@@ -17,6 +17,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+import datetime
 from typing import Literal
 
 import pydantic
@@ -99,6 +100,56 @@ class ImageIndex(pydantic.BaseModel):
     manifests: list[Descriptor]
 
     annotations: dict[str, str] | None = None
+
+    model_config = pydantic.ConfigDict(
+        extra="allow",
+        serialize_by_alias=True,
+    )
+
+
+class ImageConfig(pydantic.BaseModel):
+    created: datetime.datetime
+    history: list[HistoryEntry]
+    config: RuntimeConfig | None
+    rootfs: Rootfs
+    architecture: str
+    os: str
+
+    model_config = pydantic.ConfigDict(
+        extra="allow",
+        serialize_by_alias=True,
+    )
+
+
+class HistoryEntry(pydantic.BaseModel):
+    created: datetime.datetime
+    created_by: str
+
+    model_config = pydantic.ConfigDict(
+        extra="allow",
+        serialize_by_alias=True,
+    )
+
+
+class RuntimeConfig(pydantic.BaseModel):
+    user: str | None = pydantic.Field(None, alias="User")
+    ports: dict[str, dict] | None = pydantic.Field(None, alias="ExposedPorts")
+    env: list[str] | None = pydantic.Field(None, alias="Env")
+    entry: list[str] | None = pydantic.Field(None, alias="Entrypoint")
+    cmd: list[str] | None = pydantic.Field(None, alias="Cmd")
+    volumes: dict[str, dict] | None = pydantic.Field(None, alias="Volumes")
+    workdir: str | None = pydantic.Field(None, alias="WorkingDir")
+    labels: dict[str, str] | None = pydantic.Field(None, alias="Labels")
+
+    model_config = pydantic.ConfigDict(
+        extra="allow",
+        serialize_by_alias=True,
+    )
+
+
+class Rootfs(pydantic.BaseModel):
+    type: Literal["layers"]
+    diff_ids: list[str]
 
     model_config = pydantic.ConfigDict(
         extra="allow",
