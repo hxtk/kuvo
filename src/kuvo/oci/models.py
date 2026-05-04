@@ -17,7 +17,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-import datetime
+import datetime  # noqa: TC003 used by Pydantic
+from typing import TYPE_CHECKING
 from typing import Literal
 
 import pydantic

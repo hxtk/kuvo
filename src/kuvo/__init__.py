@@ -22,20 +22,20 @@ from kuvo import cli
 from kuvo import oci
 from kuvo import settings
 from kuvo import venv
-from kuvo.oci import InvalidReferenceError
 from kuvo.oci import NoMatchingManifestError
 from kuvo.oci import add_layer
+from kuvo.oci import ensure_path
 from kuvo.oci import models
 from kuvo.oci import oci
 from kuvo.oci import pull
 from kuvo.venv import build
 
 __all__ = [
-    "InvalidReferenceError",
     "NoMatchingManifestError",
     "add_layer",
     "build",
     "cli",
+    "ensure_path",
     "models",
     "oci",
     "pull",

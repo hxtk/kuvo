@@ -74,6 +74,8 @@ def build(ctx: click.Context) -> None:
 
             oci.add_layer(out_path, path)
 
+        oci.ensure_path(out_path, "/app/bin")
+
 
 def _package_tar(
     tf: tarfile.TarFile, rootfs: pathlib.Path, include: list[str]

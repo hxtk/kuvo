@@ -82,7 +82,6 @@ def pull(
     mf_data = mf.model_dump_json(exclude_none=True).encode()
     mf_digest = hashlib.sha256(mf_data).hexdigest()
     (blobs / mf_digest).write_bytes(mf_data)
-    print(blobs / mf_digest)
 
     (oci / "oci-layout").write_text(json.dumps({"imageLayoutVersion": "1.0.0"}))
     blobs.mkdir(exist_ok=True, parents=True)
@@ -90,9 +89,7 @@ def pull(
         _fetch_descriptor(c, con, blobs, layer)
     _fetch_descriptor(c, con, blobs, mf.config)
 
-    print(mfd.digest)
     mfd.digest = f"sha256:{mf_digest}"
-    print(mfd.digest)
     mfd.size = len(mf_data)
     (oci / "index.json").write_text(
         models.ImageIndex(
@@ -182,6 +179,71 @@ def _add_config_layer(
     cfp = oci / f"blobs/{config.digest.replace(':', '/')}"
     cf = models.ImageConfig.model_validate_json(cfp.read_text())
     cf.rootfs.diff_ids.append(layer.digest)
+
+    data = cf.model_dump_json(exclude_none=True).encode()
+    digest = hashlib.sha256(data).hexdigest()
+
+    cfp.write_bytes(data)
+    cfp.rename(oci / f"blobs/sha256/{digest}")
+
+    return f"sha256:{digest}", len(data)
+
+
+def ensure_path(
+    oci: pathlib.Path,
+    path: str,
+) -> None:
+    idxf = oci / "index.json"
+    idx = models.ImageIndex.model_validate_json(idxf.read_text())
+    for manifest in idx.manifests:
+        manifest.digest, manifest.size = _ensure_manifest_path(
+            oci,
+            manifest,
+            path,
+        )
+
+    idxf.write_text(idx.model_dump_json(exclude_none=True))
+
+
+def _ensure_manifest_path(
+    oci: pathlib.Path,
+    manifest: models.Descriptor,
+    path: str,
+) -> tuple[str, int]:
+    mfp = oci / f"blobs/{manifest.digest.replace(':', '/')}"
+    mf = models.ImageManifest.model_validate_json(mfp.read_text())
+
+    mf.config.digest, mf.config.size = _ensure_config_path(oci, mf.config, path)
+
+    data = mf.model_dump_json(exclude_none=True).encode()
+    digest = hashlib.sha256(data).hexdigest()
+    mfp.write_bytes(data)
+    mfp.rename(oci / f"blobs/sha256/{digest}")
+
+    return f"sha256:{digest}", len(data)
+
+
+def _ensure_config_path(
+    oci: pathlib.Path,
+    config: models.Descriptor,
+    path: str,
+) -> tuple[str, int]:
+    cfp = oci / f"blobs/{config.digest.replace(':', '/')}"
+    cf = models.ImageConfig.model_validate_json(cfp.read_text())
+    if not cf.config:
+        cf.config = models.RuntimeConfig(Env=[f"PATH={path}"])
+    elif not cf.config.env:
+        cf.config.env = [f"PATH={path}"]
+    else:
+        for idx, var in enumerate(cf.config.env):
+            if not var.startswith("PATH="):
+                continue
+            if not var.startswith(f"PATH={path}"):
+                paths = [path, *var.removeprefix("PATH=").split(":")]
+                cf.config.env[idx] = f"PATH={':'.join(paths)}"
+            break
+        else:
+            cf.config.env.append(f"PATH={path}")
 
     data = cf.model_dump_json(exclude_none=True).encode()
     digest = hashlib.sha256(data).hexdigest()

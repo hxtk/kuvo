@@ -21,15 +21,15 @@ __protected__ = ["models"]
 __private__ = ["*_test"]
 from kuvo.oci import models
 from kuvo.oci import oci
-from kuvo.oci.oci import InvalidReferenceError
 from kuvo.oci.oci import NoMatchingManifestError
 from kuvo.oci.oci import add_layer
+from kuvo.oci.oci import ensure_path
 from kuvo.oci.oci import pull
 
 __all__ = [
-    "InvalidReferenceError",
     "NoMatchingManifestError",
     "add_layer",
+    "ensure_path",
     "models",
     "oci",
     "pull",
