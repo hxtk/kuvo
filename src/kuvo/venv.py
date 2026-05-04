@@ -26,6 +26,7 @@ def build(rootfs: pathlib.Path) -> None:
     python = rootfs / "usr/local/python"
     app = rootfs / "app"
     env = {
+        "UV_COMPILE_BYTECODE": "1",
         "UV_FROZEN": "1",
         "UV_LINK_MODE": "copy",
         "UV_MANAGED_PYTHON": "1",
@@ -40,7 +41,11 @@ def build(rootfs: pathlib.Path) -> None:
     bin_dir = app / "bin"
     _fix_shebangs(bin_dir, rootfs)
     _fix_symlinks(rootfs)
-    (app / "pyvenv.cfg").unlink()
+
+    pycfg = app / "pyvenv.cfg"
+    pycfg.unlink()
+    pycfg.touch()
+
     for f in bin_dir.rglob("activate*"):
         f.unlink()
 
