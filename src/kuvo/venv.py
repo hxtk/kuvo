@@ -27,8 +27,11 @@ def build(rootfs: pathlib.Path) -> None:
     app = rootfs / "app"
     env = {
         "UV_FROZEN": "1",
+        "UV_LINK_MODE": "copy",
+        "UV_MANAGED_PYTHON": "1",
         "UV_NO_CACHE": "1",
         "UV_NO_DEV": "1",
+        "UV_NO_EDITABLE": "1",
         "UV_PYTHON_INSTALL_DIR": str(python),
         "UV_PROJECT_ENVIRONMENT": str(app),
         "UV_VENV_RELOCATABLE": "1",
@@ -36,10 +39,10 @@ def build(rootfs: pathlib.Path) -> None:
     subprocess.run(["uv", "sync"], env=env)  # noqa: S607
     bin_dir = app / "bin"
     _fix_shebangs(bin_dir, rootfs)
-    app_py = bin_dir / "python"
-    target = app_py.resolve().relative_to(app_py.parent, walk_up=True)
-    app_py.unlink()
-    app_py.symlink_to(target)
+    _fix_symlinks(rootfs)
+    (app / "pyvenv.cfg").unlink()
+    for f in bin_dir.rglob("activate*"):
+        f.unlink()
 
 
 def _fix_shebangs(bin_dir: pathlib.Path, rootfs: pathlib.Path) -> None:
@@ -57,3 +60,21 @@ def _fix_shebangs(bin_dir: pathlib.Path, rootfs: pathlib.Path) -> None:
         if shebang.is_relative_to(rootfs):
             lines[0] = f"#!/{shebang.relative_to(rootfs)}"
             script.write_text("\n".join(lines) + "\n")
+
+
+def _fix_symlinks(rootfs: pathlib.Path) -> None:
+    rootfs = rootfs.resolve()
+
+    for link in rootfs.rglob("*"):
+        if not link.is_symlink():
+            continue
+
+        raw_target = link.readlink()
+        if not raw_target.is_absolute():
+            continue
+
+        rel = raw_target.relative_to(rootfs)
+        target = pathlib.Path("/").joinpath(rel)
+
+        link.unlink()
+        link.symlink_to(target)

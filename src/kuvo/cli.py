@@ -40,15 +40,20 @@ def main(ctx: click.Context) -> None:
 
 
 @main.command()
+@click.option(
+    "--sandbox-debug",
+    is_flag=True,
+    default=False,
+    help="Retain the temporary rootfs directory for debugging",
+)
 @click.pass_context
-def build(ctx: click.Context) -> None:
+def build(ctx: click.Context, sandbox_debug: bool = False) -> None:
     """Build an OCI image for the current project."""
     ctx.ensure_object(settings.Config)
     out_path = pathlib.Path(ctx.obj.oci_path)
     oci.pull(out_path, ctx.obj.base)
     click.echo("Running the build...")
-    with tempfile.TemporaryDirectory() as tdstr:
-        click.echo(f"Using temporary directory {tdstr}")
+    with tempfile.TemporaryDirectory(delete=not sandbox_debug) as tdstr:
         td = pathlib.Path(tdstr)
         venv.build(td)
 
@@ -75,6 +80,9 @@ def build(ctx: click.Context) -> None:
             oci.add_layer(out_path, path)
 
         oci.ensure_path(out_path, "/app/bin")
+
+    if sandbox_debug:
+        click.echo(f"Sandbox preserved at {tdstr}")
 
 
 def _package_tar(
