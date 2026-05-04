@@ -189,31 +189,54 @@ def _add_config_layer(
     return f"sha256:{digest}", len(data)
 
 
-def ensure_path(
+def ensure_config(
     oci: pathlib.Path,
-    path: str,
+    paths: list[str],
+    entrypoint: list[str] | None = None,
+    cmd: list[str] | None = None,
 ) -> None:
+    """Ensure the runtime configuration for an image has certain properties.
+
+    Attrs:
+        paths: a list of paths that should exist in the runtime PATH.
+            If any paths don't already exist in PATH, all get prepended
+            to the PATH environment variable.
+        entrypoint: a list of arguments serving as the command entrypoint.
+            Preserves the original entrypoint if None.
+        cmd: a list of arguments serving as the command. Preserves the original
+            command if None.
+    """
     idxf = oci / "index.json"
     idx = models.ImageIndex.model_validate_json(idxf.read_text())
     for manifest in idx.manifests:
-        manifest.digest, manifest.size = _ensure_manifest_path(
+        manifest.digest, manifest.size = _ensure_manifest_config(
             oci,
             manifest,
-            path,
+            paths,
+            entrypoint,
+            cmd,
         )
 
     idxf.write_text(idx.model_dump_json(exclude_none=True))
 
 
-def _ensure_manifest_path(
+def _ensure_manifest_config(
     oci: pathlib.Path,
     manifest: models.Descriptor,
-    path: str,
+    paths: list[str],
+    entrypoint: list[str] | None = None,
+    cmd: list[str] | None = None,
 ) -> tuple[str, int]:
     mfp = oci / f"blobs/{manifest.digest.replace(':', '/')}"
     mf = models.ImageManifest.model_validate_json(mfp.read_text())
 
-    mf.config.digest, mf.config.size = _ensure_config_path(oci, mf.config, path)
+    mf.config.digest, mf.config.size = _ensure_config_config(
+        oci,
+        mf.config,
+        paths,
+        entrypoint,
+        cmd,
+    )
 
     data = mf.model_dump_json(exclude_none=True).encode()
     digest = hashlib.sha256(data).hexdigest()
@@ -223,27 +246,36 @@ def _ensure_manifest_path(
     return f"sha256:{digest}", len(data)
 
 
-def _ensure_config_path(
+def _ensure_config_config(
     oci: pathlib.Path,
     config: models.Descriptor,
-    path: str,
+    paths: list[str],
+    entrypoint: list[str] | None = None,
+    cmd: list[str] | None = None,
 ) -> tuple[str, int]:
     cfp = oci / f"blobs/{config.digest.replace(':', '/')}"
     cf = models.ImageConfig.model_validate_json(cfp.read_text())
     if not cf.config:
-        cf.config = models.RuntimeConfig(Env=[f"PATH={path}"])
+        cf.config = models.RuntimeConfig(Env=[f"PATH={':'.join(paths)}"])
     elif not cf.config.env:
-        cf.config.env = [f"PATH={path}"]
+        cf.config.env = [f"PATH={':'.join(paths)}"]
+
     else:
         for idx, var in enumerate(cf.config.env):
             if not var.startswith("PATH="):
                 continue
-            if not var.startswith(f"PATH={path}"):
-                paths = [path, *var.removeprefix("PATH=").split(":")]
+            ex_paths = var.removeprefix("PATH=").split(":")
+            if not all(x in ex_paths for x in paths):
+                paths = [*paths, *ex_paths]
                 cf.config.env[idx] = f"PATH={':'.join(paths)}"
             break
         else:
-            cf.config.env.append(f"PATH={path}")
+            cf.config.env.append(f"PATH={':'.join(paths)}")
+
+    if entrypoint is not None:
+        cf.config.entry = entrypoint
+    if cmd is not None:
+        cf.config.cmd = cmd
 
     data = cf.model_dump_json(exclude_none=True).encode()
     digest = hashlib.sha256(data).hexdigest()

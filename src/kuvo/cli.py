@@ -79,7 +79,12 @@ def build(ctx: click.Context, sandbox_debug: bool = False) -> None:
 
             oci.add_layer(out_path, path)
 
-        oci.ensure_path(out_path, "/app/bin")
+        oci.ensure_config(
+            out_path,
+            paths=["/app/bin"],
+            entrypoint=ctx.obj.entrypoint,
+            cmd=ctx.obj.cmd,
+        )
 
     if sandbox_debug:
         click.echo(f"Sandbox preserved at {tdstr}")
