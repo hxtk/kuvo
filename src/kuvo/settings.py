@@ -35,12 +35,18 @@ class Config:
         base: The OCI base image for this image.
         entrypoint: The OCI entrypoint as a list of arguments.
         cmd: The OCI command as a list of arguments.
+        repositories: The OCI repositories to generate.
+        tags: The OCI tag to generate.
     """
 
     oci_path: str
     base: str
     entrypoint: list[str] | None
     cmd: list[str] | None
+    repositories: list[str] | None
+    tags: list[str] | None
+    arch: str = "amd64"
+    os: str = "linux"
 
 
 DEFAULT: Final[Config] = Config(
@@ -48,21 +54,58 @@ DEFAULT: Final[Config] = Config(
     base="gcr.io/distroless/cc-debian13:nonroot",
     entrypoint=None,
     cmd=None,
+    repositories=["{name}"],
+    tags=["latest", "v{version}"],
 )
 
 
 def get_config() -> Config:
     """Get a configuration for Kuvo."""
-    with pathlib.Path("pyproject.toml").open("rb") as f:
-        pyproject = tomllib.load(f)
-    if "tool.kuvo" not in pyproject:
-        return DEFAULT
+    try:
+        with pathlib.Path("pyproject.toml").open("rb") as f:
+            pyproject = tomllib.load(f)
+    except FileNotFoundError:
+        pyproject: dict[str, Any] = {}
 
-    settings = pyproject["tool.kuvo"]
+    project = pyproject.get("project", {})
+    if "kuvo" not in pyproject.get("tool", {}):
+        print("No kuvo config.")
+        return _render(DEFAULT, project)
+
+    settings = pyproject.get("tool", {}).get("kuvo")
     if not isinstance(settings, dict):
-        return DEFAULT
+        print("Kuvo config isn't a dict.")
+        return _render(DEFAULT, project)
+
+    replacements = {k.replace("-", "_"): v for k, v in settings.items()}
+    return _render(
+        dataclasses.replace(
+            DEFAULT,
+            **replacements,
+        ),
+        project,
+    )
+
+
+def _render(config: Config, project: dict[str, Any]) -> Config:
+    project = _DotDict(project)
+
+    repositories = config.repositories
+    if repositories:
+        repositories = [x.format_map(project) for x in repositories]
+
+    tags = config.tags
+    if tags:
+        tags = [x.format_map(project) for x in tags]
 
     return dataclasses.replace(
-        DEFAULT,
-        **{k.replace("-", "_"): v for k, v in settings.items()},
+        config,
+        repositories=repositories,
+        tags=tags,
     )
+
+
+class _DotDict(dict):
+    __getattr__ = dict.get
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__

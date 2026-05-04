@@ -21,6 +21,8 @@
 import hashlib
 import json
 import pathlib
+import pprint
+import sys
 import tarfile
 import tempfile
 
@@ -34,9 +36,21 @@ from kuvo import venv
 
 @click.group()
 @click.pass_context
-def main(ctx: click.Context) -> None:
+def main(
+    ctx: click.Context,
+) -> None:
     """Reproducible OCI images for your Python projects."""
     ctx.obj = settings.get_config()
+
+
+@main.command()
+@click.pass_context
+def show_config(
+    ctx: click.Context,
+) -> None:
+    """Print the rendered configuration for this project."""
+    ctx.ensure_object(settings.Config)
+    click.echo(pprint.pformat(ctx.obj))
 
 
 @main.command()
@@ -47,7 +61,10 @@ def main(ctx: click.Context) -> None:
     help="Retain the temporary rootfs directory for debugging",
 )
 @click.pass_context
-def build(ctx: click.Context, sandbox_debug: bool = False) -> None:
+def build(
+    ctx: click.Context,
+    sandbox_debug: bool = False,
+) -> None:
     """Build an OCI image for the current project."""
     ctx.ensure_object(settings.Config)
     out_path = pathlib.Path(ctx.obj.oci_path)
@@ -85,6 +102,8 @@ def build(ctx: click.Context, sandbox_debug: bool = False) -> None:
             entrypoint=ctx.obj.entrypoint,
             cmd=ctx.obj.cmd,
         )
+
+        oci.tag(out_path, ctx.obj.repositories, ctx.obj.tags)
 
     if sandbox_debug:
         click.echo(f"Sandbox preserved at {tdstr}")

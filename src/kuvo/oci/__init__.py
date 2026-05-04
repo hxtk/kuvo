@@ -23,14 +23,16 @@ from kuvo.oci import models
 from kuvo.oci import oci
 from kuvo.oci.oci import NoMatchingManifestError
 from kuvo.oci.oci import add_layer
-from kuvo.oci.oci import ensure_path
+from kuvo.oci.oci import ensure_config
 from kuvo.oci.oci import pull
+from kuvo.oci.oci import tag
 
 __all__ = [
     "NoMatchingManifestError",
     "add_layer",
-    "ensure_path",
+    "ensure_config",
     "models",
     "oci",
     "pull",
+    "tag",
 ]

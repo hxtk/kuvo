@@ -24,10 +24,11 @@ from kuvo import settings
 from kuvo import venv
 from kuvo.oci import NoMatchingManifestError
 from kuvo.oci import add_layer
-from kuvo.oci import ensure_path
+from kuvo.oci import ensure_config
 from kuvo.oci import models
 from kuvo.oci import oci
 from kuvo.oci import pull
+from kuvo.oci import tag
 from kuvo.venv import build
 
 __all__ = [
@@ -35,10 +36,11 @@ __all__ = [
     "add_layer",
     "build",
     "cli",
-    "ensure_path",
+    "ensure_config",
     "models",
     "oci",
     "pull",
     "settings",
+    "tag",
     "venv",
 ]

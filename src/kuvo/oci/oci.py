@@ -18,6 +18,7 @@
 #
 
 import hashlib
+import itertools
 import json
 from typing import TYPE_CHECKING
 from typing import Literal
@@ -284,3 +285,23 @@ def _ensure_config_config(
     cfp.rename(oci / f"blobs/sha256/{digest}")
 
     return f"sha256:{digest}", len(data)
+
+
+def tag(oci: pathlib.Path, repositories: list[str], tags: list[str]) -> None:
+    """Apply the specified tags to all OCI image manifests in an index."""
+    idxf = oci / "index.json"
+    idx = models.ImageIndex.model_validate_json(idxf.read_text())
+    manifests = []
+    for repository, tag, mf in itertools.product(
+        repositories, tags, idx.manifests
+    ):
+        mf = mf.model_copy()
+        if mf.annotations is None:
+            mf.annotations = {}
+        mf.annotations["org.opencontainers.image.ref.name"] = (
+            f"{repository}:{tag}"
+        )
+        manifests.append(mf)
+
+    idx.manifests = manifests
+    idxf.write_text(idx.model_dump_json(exclude_none=True))

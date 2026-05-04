@@ -26,9 +26,11 @@ dev = [
 requires = ["uv_build>=0.11.7,<0.12"]
 build-backend = "uv_build"
 
-[tool.kovu]
+[tool.kuvo]
 base = "cgr.dev/chainguard/glibc-dynamic:latest"
-cmd = ["kuvo"]
+entrypoint = ["kuvo"]
+repositories = ["ghcr.io/hxtk/{name}"]
+tags = ["latest", "v{version}"]
 
 [tool.ruff]
 line-length = 80
