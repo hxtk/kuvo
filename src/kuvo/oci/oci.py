@@ -36,17 +36,6 @@ _IMAGE_MEDIA_TYPE = "application/vnd.oci.image.manifest.v1+json"
 _TAR_MEDIA_TYPE = "application/vnd.oci.image.layer.v1.tar"
 
 
-class InvalidReferenceError(Exception):
-    """Indicates a reference that didn't point to an image manifest."""
-
-    def __init__(self, media_type: str) -> None:
-        """Indicates the expected and received media types."""
-        self.media_type = media_type
-        super().__init__(
-            f"Expected media type '{_IMAGE_MEDIA_TYPE}'; got '{media_type}'"
-        )
-
-
 class NoMatchingManifestError(Exception):
     """Indicates an Image Index had no manifest matching a particular platform."""
 
