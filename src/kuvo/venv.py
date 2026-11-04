@@ -18,6 +18,7 @@
 #
 
 import pathlib
+import shutil
 import subprocess  # noqa: S404
 
 
@@ -37,7 +38,12 @@ def build(rootfs: pathlib.Path) -> None:
         "UV_PROJECT_ENVIRONMENT": str(app),
         "UV_VENV_RELOCATABLE": "1",
     }
-    subprocess.run(["uv", "sync"], env=env)  # noqa: S607
+
+    uv = shutil.which("uv")
+    if uv is None:
+        raise FileNotFoundError("uv")
+
+    subprocess.run([uv, "sync"], env=env)  # noqa: S607
     bin_dir = app / "bin"
     _fix_shebangs(bin_dir, rootfs)
     _fix_symlinks(rootfs)
